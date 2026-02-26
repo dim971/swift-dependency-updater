@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  pull-requests: write
+
 jobs:
   test:
     runs-on: macos-latest
@@ -26,7 +29,14 @@ jobs:
           PROF=.build/debug/codecov/default.profdata
           REPORT=$(xcrun llvm-cov report "$BIN" -instr-profile "$PROF" -ignore-filename-regex '.build/')
           echo "$REPORT"
-          echo '## Code Coverage' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "$REPORT" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BIN=.build/debug/SwiftDependencyUpdaterPackageTests.xctest/Contents/MacOS/SwiftDependencyUpdaterPackageTests
+          PROF=.build/debug/codecov/default.profdata
+          REPORT=$(xcrun llvm-cov report "$BIN" -instr-profile "$PROF" -ignore-filename-regex '.build/')
+          BODY=$(printf '## Code Coverage\n```\n%s\n```' "$REPORT")
+          # Delete previous coverage comment if any
+          gh pr comment ${{ github.event.pull_request.number }} --body "$BODY"

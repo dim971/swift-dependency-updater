@@ -10,7 +10,6 @@ A Swift Package Manager plugin that automates dependency version management acro
   * [Method 2: Using Xcode UI](#method-2-using-xcode-ui-for-xcode-projects)
 - [Configuration](#configuration)
   * [Creating dependencies.yaml](#creating-dependenciesyaml)
-  * [Adding @dep Tags](#adding-dep-tags)
 - [Usage](#usage)
   * [Option 1: Xcode UI](#option-1-xcode-ui)
   * [Option 2: Command Line](#option-2-command-line)
@@ -23,8 +22,8 @@ A Swift Package Manager plugin that automates dependency version management acro
 Managing dependency versions across multiple `Package.swift` files in a large iOS project can be error-prone and time-consuming. **SwiftDependencyUpdater** solves this by:
 
 1. Storing all external dependency versions in a single `dependencies.yaml` file
-2. Using `// @dep` comment tags to mark which dependencies should be auto-updated
-3. Running a single command to update all marked dependencies across your entire project
+2. Automatically matching `.package(url: "...")` declarations by extracting the package name from the URL's last path component (e.g. `firebase-ios-sdk` from `https://github.com/firebase/firebase-ios-sdk.git`)
+3. Running a single command to update all matched dependencies across your entire project
 
 ---
 
@@ -83,24 +82,24 @@ swift-collections: "1.1.0"
 **Default Location:** `Dependencies/dependencies.yaml` (relative to project root)
 **Custom Location:** Use `--dependencies-path` argument to specify a different path
 
-### Adding @dep Tags
+### How Matching Works
 
-Mark dependencies for auto-update by adding `// @dep <package-name>` comments:
+The plugin automatically matches `.package(url: "...")` declarations in your `Package.swift` files against keys in `dependencies.yaml`:
 
 ```swift
 let dependencies: [Package.Dependency] = [
     .package(path: "../FeatureModule"),
-    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.3.0"), // @dep firebase-ios-sdk
-    .package(url: "https://github.com/airbnb/lottie-ios.git", exact: "4.3.4"), // @dep lottie-ios
-    .package(url: "https://github.com/Alamofire/Alamofire.git", exact: "5.8.1"), // @dep Alamofire
+    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.3.0"),
+    .package(url: "https://github.com/airbnb/lottie-ios.git", exact: "4.3.4"),
+    .package(url: "https://github.com/Alamofire/Alamofire.git", exact: "5.8.1"),
 ]
 ```
 
 **Important Rules:**
-- The tag must be in the format: `// @dep <package-name>`
-- Package name must match exactly with the key in `dependencies.yaml`
+- The package name is derived from the URL's last path component (stripping `.git` suffix)
+- The derived name must match exactly with a key in `dependencies.yaml` (e.g. `firebase-ios-sdk`, `lottie-ios`, `Alamofire`)
 - Only dependencies using `exact:` version requirement are updated
-- Tags can be on the same line as the `.package()` declaration
+- Multi-line `.package()` declarations are fully supported
 
 ---
 
@@ -169,13 +168,13 @@ Alamofire: "5.8.1"
 swift-collections: "1.1.0"
 ```
 
-### Package.swift with @dep Tags
+### Package.swift
 ```swift
 // Modules/Core/Package.swift
 let dependencies: [Package.Dependency] = [
     .package(path: "../Networking"),
-    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.3.0"), // @dep firebase-ios-sdk
-    .package(url: "https://github.com/airbnb/lottie-ios.git", exact: "4.3.4"), // @dep lottie-ios
-    .package(url: "https://github.com/Alamofire/Alamofire.git", exact: "5.8.1"), // @dep Alamofire
+    .package(url: "https://github.com/firebase/firebase-ios-sdk.git", exact: "12.3.0"),
+    .package(url: "https://github.com/airbnb/lottie-ios.git", exact: "4.3.4"),
+    .package(url: "https://github.com/Alamofire/Alamofire.git", exact: "5.8.1"),
 ]
 ```

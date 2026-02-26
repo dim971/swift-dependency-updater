@@ -99,42 +99,82 @@ private extension DependencyUpdaterTool {
         return packageFiles
     }
 
-    func normalizeRequirementKeyword(in line: String) -> String {
-        let pattern = #/(branch|from):/#
-        return line.replacing(pattern, with: "exact:")
+    func findClosingParenthesis(in content: String, from start: String.Index) -> String.Index? {
+        var depth = 1
+        var inString = false
+        var index = start
+
+        while index < content.endIndex {
+            let char = content[index]
+
+            if char == "\"" {
+                inString.toggle()
+            } else if !inString {
+                if char == "(" {
+                    depth += 1
+                } else if char == ")" {
+                    depth -= 1
+                    if depth == 0 {
+                        return index
+                    }
+                }
+            }
+
+            index = content.index(after: index)
+        }
+
+        return nil
     }
 
-    func updatingPackageLine(_ line: String, forDep name: String, toVersion newVersion: String) -> String {
-        let marker = "// @dep \(name)"
-        guard line.contains(marker) else {
-            return line
+    func extractPackageName(from url: String) -> String? {
+        guard let lastComponent = url.split(separator: "/").last else { return nil }
+        var name = String(lastComponent)
+        if name.hasSuffix(".git") {
+            name = String(name.dropLast(4))
         }
-
-        let workingLine = normalizeRequirementKeyword(in: line)
-
-        let pattern = #/exact:\s*"([^"]+)"/#
-
-        guard let _ = workingLine.firstMatch(of: pattern) else {
-            return workingLine
-        }
-
-        return workingLine.replacing(pattern) { _ in
-            "exact: \"\(newVersion)\""
-        }
+        return name.isEmpty ? nil : name
     }
 
     func updatePackageContent(_ content: String, with deps: [String: String]) -> String {
-        var lines = content.components(separatedBy: .newlines)
+        var result = content
+        let packagePattern = #/\.package\(/#
 
-        for index in lines.indices {
-            var updatedLine = lines[index]
-            for (name, newVersion) in deps {
-                updatedLine = updatingPackageLine(updatedLine, forDep: name, toVersion: newVersion)
+        var searchStart = result.startIndex
+        while let match = result[searchStart...].firstMatch(of: packagePattern) {
+            let blockStart = match.range.lowerBound
+            let afterOpen = match.range.upperBound
+
+            guard let closingIndex = findClosingParenthesis(in: result, from: afterOpen) else {
+                searchStart = afterOpen
+                continue
             }
-            lines[index] = updatedLine
+
+            let blockEnd = result.index(after: closingIndex)
+            let block = String(result[blockStart..<blockEnd])
+
+            let urlPattern = #/url:\s*"([^"]*)"/#
+            guard let urlMatch = block.firstMatch(of: urlPattern),
+                  let packageName = extractPackageName(from: String(urlMatch.1)),
+                  let newVersion = deps[packageName] else {
+                searchStart = blockEnd
+                continue
+            }
+
+            let exactPattern = #/exact:\s*"([^"]*)"/#
+            guard let _ = block.firstMatch(of: exactPattern) else {
+                searchStart = blockEnd
+                continue
+            }
+
+            let updatedBlock = block.replacing(exactPattern) { _ in
+                "exact: \"\(newVersion)\""
+            }
+
+            result.replaceSubrange(blockStart..<blockEnd, with: updatedBlock)
+            searchStart = result.index(blockStart, offsetBy: updatedBlock.count)
         }
 
-        return lines.joined(separator: "\n")
+        return result
     }
 
     func updatePackages(at paths: [String], with deps: [String: String]) {

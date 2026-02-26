@@ -6,9 +6,37 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  pull-requests: write
+
 jobs:
   test:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - run: swift test
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: '6.2'
+      - uses: actions/cache@v4
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+      - run: swift test --enable-code-coverage
+      - name: Coverage summary
+        run: |
+          BIN=.build/debug/SwiftDependencyUpdaterPackageTests.xctest/Contents/MacOS/SwiftDependencyUpdaterPackageTests
+          PROF=.build/debug/codecov/default.profdata
+          REPORT=$(xcrun llvm-cov report "$BIN" -instr-profile "$PROF" -ignore-filename-regex '.build/')
+          echo "$REPORT"
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BIN=.build/debug/SwiftDependencyUpdaterPackageTests.xctest/Contents/MacOS/SwiftDependencyUpdaterPackageTests
+          PROF=.build/debug/codecov/default.profdata
+          REPORT=$(xcrun llvm-cov report "$BIN" -instr-profile "$PROF" -ignore-filename-regex '.build/')
+          BODY=$(printf '## Code Coverage\n```\n%s\n```' "$REPORT")
+          # Delete previous coverage comment if any
+          gh pr comment ${{ github.event.pull_request.number }} --body "$BODY"

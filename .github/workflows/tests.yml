@@ -23,6 +23,10 @@ jobs:
       - name: Coverage summary
         run: |
           BIN=.build/debug/SwiftDependencyUpdaterPackageTests.xctest/Contents/MacOS/SwiftDependencyUpdaterPackageTests
-          xcrun llvm-cov report "$BIN" \
-            -instr-profile .build/debug/codecov/default.profdata \
-            -ignore-filename-regex '.build/'
+          PROF=.build/debug/codecov/default.profdata
+          REPORT=$(xcrun llvm-cov report "$BIN" -instr-profile "$PROF" -ignore-filename-regex '.build/')
+          echo "$REPORT"
+          echo '## Code Coverage' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-dependency-updater}",
+            "name": "Debug DependencyUpdaterExecutable",
+            "target": "DependencyUpdaterExecutable",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug DependencyUpdaterExecutable"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:swift-dependency-updater}",
+            "name": "Release DependencyUpdaterExecutable",
+            "target": "DependencyUpdaterExecutable",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release DependencyUpdaterExecutable"
+        }
+    ]
+}

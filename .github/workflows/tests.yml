@@ -19,4 +19,10 @@ jobs:
           path: .build
           key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
           restore-keys: spm-${{ runner.os }}-
-      - run: swift test
+      - run: swift test --enable-code-coverage
+      - name: Coverage summary
+        run: |
+          BIN=.build/debug/SwiftDependencyUpdaterPackageTests.xctest/Contents/MacOS/SwiftDependencyUpdaterPackageTests
+          xcrun llvm-cov report "$BIN" \
+            -instr-profile .build/debug/codecov/default.profdata \
+            -ignore-filename-regex '.build/'

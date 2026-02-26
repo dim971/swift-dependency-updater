@@ -1,4 +1,5 @@
 import Foundation
+import DependencyUpdaterCore
 
 guard CommandLine.arguments.count >= 3 else {
     FileHandle.standardError.write(Data("Usage: DependencyUpdaterExecutable <projectRoot> <dependenciesPath>\n".utf8))

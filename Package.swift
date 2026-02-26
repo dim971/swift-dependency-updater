@@ -18,10 +18,17 @@ let dependencies: [Package.Dependency] = [
     .package(url: "https://github.com/jpsim/Yams.git", exact: "6.2.1")
 ]
 
+let targetDependencyUpdaterCoreName = "DependencyUpdaterCore"
+
 let targets: [Target] = [
+    .target(
+        name: targetDependencyUpdaterCoreName,
+        dependencies: [.product(name: "Yams", package: "Yams")],
+        path: "Sources/DependencyUpdaterCore"
+    ),
     .executableTarget(
         name: targetDependencyUpdaterExecutableName,
-        dependencies: [.product(name: "Yams", package: "Yams")],
+        dependencies: [.target(name: targetDependencyUpdaterCoreName)],
         path: "Sources/DependencyUpdaterExecutable"
     ),
     .plugin(
@@ -37,6 +44,11 @@ let targets: [Target] = [
         ),
         dependencies: [.target(name: targetDependencyUpdaterExecutableName)],
         path: "Sources/DependencyUpdater/Plugins"
+    ),
+    .testTarget(
+        name: "DependencyUpdaterTests",
+        dependencies: [.target(name: targetDependencyUpdaterCoreName)],
+        path: "Tests/DependencyUpdaterTests"
     )
 ]
 

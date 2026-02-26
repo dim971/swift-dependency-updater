@@ -1,14 +1,16 @@
 import Foundation
 import Yams
 
-typealias Dependency = [String: String]
+public typealias Dependency = [String: String]
 
-struct DependencyUpdaterTool {
+public struct DependencyUpdaterTool {
 
     // MARK: - Properties
     private let excludedDirectories = ["Build", ".git", ".build", "DerivedData"]
 
-    func run(projectRoot: String, dependenciesPath: String) throws {
+    public init() {}
+
+    public func run(projectRoot: String, dependenciesPath: String) throws {
         let deps = loadDependencies(at: dependenciesPath)
 
         let packageFiles = findPackageFiles(at: projectRoot)
@@ -21,7 +23,7 @@ struct DependencyUpdaterTool {
     }
 }
 
-private extension DependencyUpdaterTool {
+extension DependencyUpdaterTool {
 
     func log(_ message: String) {
         print(message)

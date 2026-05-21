@@ -95,3 +95,7 @@ fastlane/test_output
 # https://github.com/johnno1962/injectionforxcode
 
 iOSInjectionProject/
+
+# Override global gitignore: track .claude/ in this repo, but keep per-user settings local
+!.claude/
+.claude/settings.local.json
